@@ -227,6 +227,22 @@ public abstract class ArrowheadMain {
     server.getServerConfiguration().addHttpHandler(httpHandler, "/api");
     //Allow message payload for GET and DELETE requests - ONLY to provide custom error message for them
     server.getServerConfiguration().setAllowPayloadForUndefinedHttpMethods(true);
+    
+    NetworkListener listener = server.getListener("grizzly");
+    TCPNIOTransport transport = listener.getTransport();    
+    int availableProcessors = Runtime.getRuntime().availableProcessors();
+    PooledMemoryManager pooledMemoryManager = new PooledMemoryManager(true);
+    
+    listener.getKeepAlive().setIdleTimeoutInSeconds(-1);
+    listener.getKeepAlive().setMaxRequestsCount(-1);
+    
+    transport.setMemoryManager(pooledMemoryManager);
+    transport.getWorkerThreadPoolConfig().setCorePoolSize(availableProcessors);
+    transport.getWorkerThreadPoolConfig().setMaxPoolSize(availableProcessors);
+    transport.getWorkerThreadPoolConfig().setQueueLimit(-1);
+    transport.setSelectorRunnersCount(availableProcessors * 4);
+    transport.setKeepAlive(true);
+    transport.setConnectionTimeout(-1);    
   }
 
   private void shutdown() {

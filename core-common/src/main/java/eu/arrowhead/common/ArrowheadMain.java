@@ -241,11 +241,15 @@ public abstract class ArrowheadMain {
     
     transport.setMemoryManager(pooledMemoryManager);
     transport.getWorkerThreadPoolConfig().setCorePoolSize(availableProcessors);
-    transport.getWorkerThreadPoolConfig().setMaxPoolSize(availableProcessors);
+    transport.getWorkerThreadPoolConfig().setMaxPoolSize(availableProcessors *
+      8);
     transport.getWorkerThreadPoolConfig().setQueueLimit(-1);
-    transport.setSelectorRunnersCount(availableProcessors * 4);
+    transport.setSelectorRunnersCount(availableProcessors * 8);
+    transport.getWorkerThreadPoolConfig().setKeepAliveTime(180000,
+    TimeUnit.MILLISECONDS);
     transport.setKeepAlive(true);
-    transport.setConnectionTimeout(-1);    
+    transport.setConnectionTimeout(-1);
+   
   }
 
   private void shutdown() {

@@ -257,6 +257,8 @@ public abstract class ArrowheadMain {
     transport.setConnectionTimeout(-1);
     transport.setReuseAddress(true);
     
+    log.info("grizzly fine tune implemented");
+    
     server.getServerConfiguration().getMonitoringConfig().getWebServerConfig().addProbes(new HttpServerProbe.Adapter() {
 
       @Override

@@ -31,21 +31,25 @@ import java.util.List;
 import java.util.Map;
 import java.util.ServiceConfigurationError;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLContext;
 import javax.ws.rs.ProcessingException;
 import javax.ws.rs.core.UriBuilder;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
+import org.glassfish.grizzly.Connection;
 import org.glassfish.grizzly.http.server.CLStaticHttpHandler;
 import org.glassfish.grizzly.http.server.HttpHandler;
 import org.glassfish.grizzly.http.server.HttpServer;
+import org.glassfish.grizzly.http.server.HttpServerFilter;
+import org.glassfish.grizzly.http.server.HttpServerProbe;
 import org.glassfish.grizzly.http.server.NetworkListener;
+import org.glassfish.grizzly.http.server.Response;
 import org.glassfish.grizzly.memory.PooledMemoryManager;
 import org.glassfish.grizzly.nio.transport.TCPNIOTransport;
 import org.glassfish.grizzly.ssl.SSLContextConfigurator;
 import org.glassfish.grizzly.ssl.SSLContextConfigurator.GenericStoreException;
 import org.glassfish.grizzly.ssl.SSLEngineConfigurator;
+import org.glassfish.grizzly.strategies.WorkerThreadIOStrategy;
 import org.glassfish.jersey.grizzly2.httpserver.GrizzlyHttpServerFactory;
 import org.glassfish.jersey.server.ResourceConfig;
 
@@ -235,21 +239,35 @@ public abstract class ArrowheadMain {
     NetworkListener listener = server.getListener("grizzly");
     TCPNIOTransport transport = listener.getTransport();    
     int availableProcessors = Runtime.getRuntime().availableProcessors();
-    PooledMemoryManager pooledMemoryManager = new PooledMemoryManager(true);
+    PooledMemoryManager pooledMemoryManager = new PooledMemoryManager(4096, 3, 2, availableProcessors,(float) 0.10, 1, false);
     
     listener.getKeepAlive().setIdleTimeoutInSeconds(-1);
     listener.getKeepAlive().setMaxRequestsCount(-1);
+    listener.setTransactionTimeout(-1);
     
+    transport.setIOStrategy(WorkerThreadIOStrategy.getInstance());
     transport.setMemoryManager(pooledMemoryManager);
-    transport.getWorkerThreadPoolConfig().setCorePoolSize(availableProcessors);
-    transport.getWorkerThreadPoolConfig().setMaxPoolSize(availableProcessors *
-      8);
+    transport.getWorkerThreadPoolConfig().setCorePoolSize(availableProcessors * 4);
+    transport.getWorkerThreadPoolConfig().setMaxPoolSize(availableProcessors * 4);
     transport.getWorkerThreadPoolConfig().setQueueLimit(-1);
-    transport.setSelectorRunnersCount(availableProcessors * 8);
-    transport.getWorkerThreadPoolConfig().setKeepAliveTime(180000,
-    TimeUnit.MILLISECONDS);
+    
+    transport.setSelectorRunnersCount(availableProcessors * 2);
+    
     transport.setKeepAlive(true);
     transport.setConnectionTimeout(-1);
+    transport.setReuseAddress(true);
+    
+    server.getServerConfiguration().getMonitoringConfig().getWebServerConfig().addProbes(new HttpServerProbe.Adapter() {
+
+      @Override
+      public void onRequestCompleteEvent(
+          HttpServerFilter filter,
+          Connection connection,
+          Response response) {
+
+        connection.close();
+      }
+    });
    
   }
 

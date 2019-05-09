@@ -88,3 +88,4 @@ A guide on how to add new core systems to the package generation: [DEBIAN-DEV.md
 Each core system offers [Swagger UI](https://swagger.io/tools/swagger-ui/) to discover its REST interfaces. This UI is available at the `/api/` 
 root path. So for example the REST interfaces of the Service Registry is available at http://localhost:8442/api/ by default. In insecure mode, all 
 the requests can be tested by clicking on the "Try it out" button.
+
